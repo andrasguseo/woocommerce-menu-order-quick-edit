@@ -45,7 +45,7 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 			add_action( 'save_post', [ $this, 'save_custom_product_quick_edit_fields' ], 10, 2 );
 
 			// Enqueue scripts
-			add_action( 'admin_enqueue_scripts', [$this, 'tec_enqueue_quick_edit_population_script' ] );
+			add_action( 'admin_enqueue_scripts', [ $this, 'tec_enqueue_quick_edit_population_script' ] );
 		}
 
 		/**
@@ -56,8 +56,8 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 		 * @return array
 		 * @since 1.0.0
 		 */
-		function custom_product_columns( $columns ) {
-			$columns[ 'menu_order' ] = __( 'Menu Order', 'text-domain' );
+		function custom_product_columns( array $columns ): array {
+			$columns[ 'menu_order' ] = __( 'Menu order', 'woocommerce' );
 
 			return $columns;
 		}
@@ -66,14 +66,13 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 		/**
 		 * Display data for custom column.
 		 *
-		 * @param array $column  Array of column names.
-		 * @param int   $post_id The post ID.
+		 * @param string $column  The column name.
+		 * @param int    $post_id The post ID.
 		 *
 		 * @return void
 		 * @since 1.0.0
 		 */
-		function custom_product_column_data( $column, $post_id ) {
-			global $wpdb;
+		function custom_product_column_data( string $column, int $post_id ) {
 			if ( $column === 'menu_order' ) {
 				$menu_order = $this->custom_get_menu_order( $post_id );
 				echo $menu_order;
@@ -84,19 +83,19 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 		/**
 		 * Make custom column editable in quick edit mode.
 		 *
-		 * @param array  $column_name Array of column names.
+		 * @param string $column_name Name of the column to edit.
 		 * @param string $post_type   The post type.
 		 *
 		 * @return void
 		 * @since 1.0.0
 		 */
-		function custom_product_quick_edit_fields( $column_name, $post_type ) {
+		function custom_product_quick_edit_fields( string $column_name, string $post_type ) {
 			if ( 'menu_order' === $column_name && 'product' === $post_type ) {
 				?>
-				<fieldset class="inline-edit-col-right">
+				<fieldset class="inline-edit-col-left">
 					<div class="inline-edit-col">
 						<label>
-							<span class="title"><?php _e( 'Menu Order', 'text-domain' ); ?></span>
+							<span class="title"><?php _e( 'Menu order', 'woocommerce' ); ?></span>
 							<span class="input-text-wrap">
                         <input type="text" name="menu_order" class="menu-order" value="">
                     </span>
@@ -116,7 +115,7 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 		 * @return void
 		 * @since 1.0.0
 		 */
-		function save_custom_product_quick_edit_fields( $post_id, $post ) {
+		function save_custom_product_quick_edit_fields( int $post_id, WP_Post $post ) {
 			global $wpdb;
 			if ( 'product' !== $post->post_type ) {
 				return;
@@ -124,40 +123,46 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 
 			if ( isset( $_REQUEST[ 'menu_order' ] ) ) {
 				$menu_order = intval( $_REQUEST[ 'menu_order' ] );
-				$wpdb->update( $wpdb->posts, array( 'menu_order' => $menu_order ), array( 'ID' => $post_id ) );
+				$wpdb->update( $wpdb->posts, [ 'menu_order' => $menu_order ], [ 'ID' => $post_id ] );
 			}
 		}
 
 		/**
 		 * Get menu_order from the database.
 		 *
-		 * @param int $post_id The post ID for which to get the menu_order
+		 * @param int $post_id The post ID for which to get the menu_order.
 		 *
 		 * @return string|null
 		 * @since 1.0.0
 		 */
-		function custom_get_menu_order( $post_id ) {
+		function custom_get_menu_order( int $post_id ): ?string {
 			global $wpdb;
 
-			return $wpdb->get_var( $wpdb->prepare( "SELECT menu_order FROM $wpdb->posts WHERE ID = %d", $post_id ) );
+			return $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT menu_order FROM $wpdb->posts WHERE ID = %d",
+					$post_id
+				)
+			);
 		}
 
 		/**
 		 * Enqueue the javascript file.
 		 *
-		 * @param $pagehook
+		 * @param string $pagehook The current admin page.
 		 *
 		 * @return void
 		 * @since 1.0.0
 		 */
-		function tec_enqueue_quick_edit_population_script( $hook ) {
+		function tec_enqueue_quick_edit_population_script( string $pagehook ) {
 
 			// Bail if we are not on the target pages.
-			if ( 'edit.php' != $hook ) {
+			if ( 'edit.php' != $pagehook ) {
 				return;
 			}
-
-			wp_enqueue_script( 'woo-menu_order-populate-quick-edit',   plugin_dir_url( __FILE__ ) . 'resources/js/populate.js' );
+			if ( isset( $_GET[ 'post_type' ] ) && $_GET[ 'post_type' ] === 'product' ) {
+				wp_enqueue_script( 'woo-menu_order-quick-edit', plugin_dir_url( __FILE__ ) . 'resources/js/populate.js' );
+			}
 		}
 	}
 
