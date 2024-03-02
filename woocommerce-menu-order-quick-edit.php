@@ -43,6 +43,9 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 
 			// Save the custom column value from quick edit mode.
 			add_action( 'save_post', [ $this, 'save_custom_product_quick_edit_fields' ], 10, 2 );
+
+			// Enqueue scripts
+			add_action( 'admin_enqueue_scripts', [$this, 'tec_enqueue_quick_edit_population_script' ] );
 		}
 
 		/**
@@ -137,6 +140,24 @@ if ( ! class_exists( 'AGU_Woo_Menu_Order_Quick_Edit' ) ) {
 			global $wpdb;
 
 			return $wpdb->get_var( $wpdb->prepare( "SELECT menu_order FROM $wpdb->posts WHERE ID = %d", $post_id ) );
+		}
+
+		/**
+		 * Enqueue the javascript file.
+		 *
+		 * @param $pagehook
+		 *
+		 * @return void
+		 * @since 1.0.0
+		 */
+		function tec_enqueue_quick_edit_population_script( $hook ) {
+
+			// Bail if we are not on the target pages.
+			if ( 'edit.php' != $hook ) {
+				return;
+			}
+
+			wp_enqueue_script( 'woo-menu_order-populate-quick-edit',   plugin_dir_url( __FILE__ ) . 'resources/js/populate.js' );
 		}
 	}
 
